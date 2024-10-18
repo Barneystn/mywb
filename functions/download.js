@@ -3,13 +3,15 @@ export async function onRequest(context) {
   const url = new URL(request.url);
   const searchParams = url.searchParams;
 
-  const encodedData = searchParams.get('data');
-  if (!encodedData) {
-    return new Response('Data parameter is missing', { status: 400 });
+  // دریافت لینک به صورت مستقیم از پارامتر URL بدون انکد شدن
+  const decodedUrl = searchParams.get('url');
+  const filename = searchParams.get('filename') || 'downloaded_file';
+
+  if (!decodedUrl) {
+    return new Response('URL parameter is missing', { status: 400 });
   }
 
   try {
-    const { url: decodedUrl, filename } = JSON.parse(atob(encodedData));
     const response = await fetch(decodedUrl, {
       headers: request.headers,
     });
