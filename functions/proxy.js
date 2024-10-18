@@ -8,11 +8,12 @@ export async function onRequest(context) {
     return new Response('URL parameter is missing', { status: 400 });
   }
 
+  // در صورت نبودن http یا https، به لینک اضافه می‌شود
   if (!/^https?:\/\//i.test(originalUrl)) {
     originalUrl = 'http://' + originalUrl;
   }
 
-  // Fetch the blacklist from a remote text file
+  // دریافت لیست دامنه‌های بلاک‌شده از یک فایل خارجی
   let blockedDomains = [];
   try {
     const response = await fetch('https://raw.githubusercontent.com/MinitorMHS/CF_Web_Proxy/main/Functions/blacklist.txt');
@@ -25,28 +26,28 @@ export async function onRequest(context) {
   } catch (error) {
     console.error('Error fetching blacklist:', error);
   }
-  
+
   const requestedDomain = new URL(originalUrl).hostname;
   if (blockedDomains.includes(requestedDomain)) {
     return new Response('This domain is not allowed', { status: 403 });
   }
 
-  const filename = originalUrl.split('/').pop();
-  const encodedData = btoa(JSON.stringify({ url: originalUrl, filename: filename }));
+  // دریافت نام فایل از لینک
+  const filename = originalUrl.split('/').pop() || 'downloaded_file';
 
-  // Check the hostname and modify the links
+  // لینک‌های دانلود و مشاهده به‌صورت مستقیم (بدون انکد)
   let proxiedUrl;
   let watchUrl;
   if (url.hostname === 'your-custom-domain.com') {
-    proxiedUrl = `https://your-domain.ir.cdn.ir/download?data=${encodedData}`;
-    watchUrl = `https://your-domain.ir.cdn.ir/watch?data=${encodedData}`;
+    proxiedUrl = `https://your-domain.ir.cdn.ir/download?url=${encodeURIComponent(originalUrl)}&filename=${encodeURIComponent(filename)}`;
+    watchUrl = `https://your-domain.ir.cdn.ir/watch?url=${encodeURIComponent(originalUrl)}&filename=${encodeURIComponent(filename)}`;
   } else {
-    proxiedUrl = `${url.origin}/download?data=${encodedData}`;
-    watchUrl = `${url.origin}/watch?data=${encodedData}`;
+    proxiedUrl = `${url.origin}/download?url=${encodeURIComponent(originalUrl)}&filename=${encodeURIComponent(filename)}`;
+    watchUrl = `${url.origin}/watch?url=${encodeURIComponent(originalUrl)}&filename=${encodeURIComponent(filename)}`;
   }
 
-  return new Response(`
-    <html>
+  return new Response(
+    `<html>
       <head>
         <style>
           body { font-family: Arial, sans-serif; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #a9a9a9; }
@@ -75,6 +76,7 @@ export async function onRequest(context) {
         </div>
         <p class="filename">Filename: ${filename}</p>
       </body>
-    </html>
-  `, { headers: { 'Content-Type': 'text/html' } });
+    </html>`,
+    { headers: { 'Content-Type': 'text/html' } }
+  );
 }
